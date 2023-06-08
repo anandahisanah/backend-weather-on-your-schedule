@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"see-weather-on-your-schedule/entity"
+	"see-weather-on-your-schedule/models"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -37,7 +37,7 @@ func StartDB() {
 	}
 
 	fmt.Println("success connecting to database")
-	db.Debug().AutoMigrate(entity.User{})
+	db.Debug().AutoMigrate(models.User{})
 }
 
 func GetDB() *gorm.DB {
