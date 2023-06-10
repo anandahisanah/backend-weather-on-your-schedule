@@ -15,10 +15,10 @@ type Value struct {
 }
 
 type Timerange struct {
-	Type     string `xml:"type,attr" json:"type"`
-	H        string `xml:"h,attr" json:"h"`
-	DateTime string `xml:"datetime,attr" json:"datetime"`
-	Value    Value  `xml:"value" json:"value"`
+	Type     string  `xml:"type,attr" json:"type"`
+	H        string  `xml:"h,attr" json:"h"`
+	DateTime string  `xml:"datetime,attr" json:"datetime"`
+	Values   []Value `xml:"value" json:"values"`
 }
 
 type Parameter struct {
@@ -63,15 +63,19 @@ type FormattedParameter struct {
 }
 
 type FormattedTimerange struct {
-	Type     string         `json:"type"`
-	H        string         `json:"h"`
-	DateTime time.Time      `json:"datetime"`
-	Value    FormattedValue `json:"value"`
+	Type     string           `json:"type"`
+	H        string           `json:"h"`
+	DateTime time.Time        `json:"datetime"`
+	Values   []FormattedValue `json:"values"`
 }
 
 type FormattedValue struct {
 	Unit  string `json:"unit"`
 	Value string `json:"value"`
+}
+
+func main() {
+	GetForecastBmkg()
 }
 
 func GetForecastBmkg() {
@@ -124,16 +128,20 @@ func GetForecastBmkg() {
 					continue
 				}
 
-				formattedValue := FormattedValue{
-					Unit:  tr.Value.Unit,
-					Value: tr.Value.Value,
+				formattedValues := make([]FormattedValue, 0)
+				for _, value := range tr.Values {
+					formattedValue := FormattedValue{
+						Unit:  value.Unit,
+						Value: value.Value,
+					}
+					formattedValues = append(formattedValues, formattedValue)
 				}
 
 				formattedTR := FormattedTimerange{
 					Type:     tr.Type,
 					H:        tr.H,
 					DateTime: t,
-					Value:    formattedValue,
+					Values:   formattedValues,
 				}
 
 				formattedParam.Timeranges = append(formattedParam.Timeranges, formattedTR)
