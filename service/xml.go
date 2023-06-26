@@ -1,4 +1,4 @@
-package main
+package service
 
 import (
 	"encoding/json"
@@ -9,77 +9,121 @@ import (
 	"time"
 )
 
-type Value struct {
+type value struct {
 	Unit  string `xml:"unit,attr" json:"unit"`
 	Value string `xml:",chardata" json:"value"`
 }
 
-type Timerange struct {
+type timerange struct {
 	Type     string  `xml:"type,attr" json:"type"`
 	H        string  `xml:"h,attr" json:"h"`
 	DateTime string  `xml:"datetime,attr" json:"datetime"`
-	Values   []Value `xml:"value" json:"values"`
+	Values   []value `xml:"value" json:"values"`
 }
 
-type Parameter struct {
+type parameter struct {
 	ID          string      `xml:"id,attr" json:"id"`
 	Description string      `xml:"description,attr" json:"description"`
 	Type        string      `xml:"type,attr" json:"type"`
-	Timeranges  []Timerange `xml:"timerange" json:"timeranges"`
+	Timeranges  []timerange `xml:"timerange" json:"timeranges"`
 }
 
-type Name struct {
+type name struct {
 	Language string `xml:"lang,attr" json:"language"`
 	Value    string `xml:",chardata" json:"value"`
 }
 
-type Area struct {
-	Names      []Name      `xml:"name" json:"name"`
-	Parameters []Parameter `xml:"parameter" json:"parameter"`
+type area struct {
+	Names      []name      `xml:"name" json:"name"`
+	Parameters []parameter `xml:"parameter" json:"parameter"`
 }
 
-type Forecast struct {
-	Areas []Area `xml:"area" json:"areas"`
+type forecast struct {
+	Areas []area `xml:"area" json:"areas"`
 }
 
-type Data struct {
-	Forecast Forecast `xml:"forecast" json:"forecast"`
+type data struct {
+	Forecast forecast `xml:"forecast" json:"forecast"`
 }
 
-type FormattedForecast struct {
-	Areas []FormattedArea `json:"areas"`
+type formattedForecast struct {
+	Areas []formattedArea `json:"areas"`
 }
 
-type FormattedArea struct {
-	Name       []Name               `json:"name"`
-	Parameters []FormattedParameter `json:"parameter"`
+type formattedArea struct {
+	Name       []name               `json:"name"`
+	Parameters []formattedParameter `json:"parameter"`
 }
 
-type FormattedParameter struct {
+type formattedParameter struct {
 	ID          string               `json:"id"`
 	Description string               `json:"description"`
 	Type        string               `json:"type"`
-	Timeranges  []FormattedTimerange `json:"timeranges"`
+	Timeranges  []formattedTimerange `json:"timeranges"`
 }
 
-type FormattedTimerange struct {
+type formattedTimerange struct {
 	Type     string           `json:"type"`
 	H        string           `json:"h"`
 	DateTime time.Time        `json:"datetime"`
-	Values   []FormattedValue `json:"values"`
+	Values   []formattedValue `json:"values"`
 }
 
-type FormattedValue struct {
+type formattedValue struct {
 	Unit  string `json:"unit"`
 	Value string `json:"value"`
 }
 
-func main() {
-	GetForecastBmkg()
+func GetCity(provinceName string) ([]byte, error) {
+	endpoint := fmt.Sprintf("https://data.bmkg.go.id/DataMKG/MEWS/DigitalForecast/DigitalForecast-%s.xml", provinceName)
+	response, err := http.Get(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("error: %s", err)
+	}
+	defer response.Body.Close()
+
+	// Read XML response body
+	xmlData, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error: %s", err)
+	}
+
+	// Unmarshal XML data into the Data struct
+	var data data
+	err = xml.Unmarshal(xmlData, &data)
+	if err != nil {
+		return nil, fmt.Errorf("error: %s", err)
+	}
+
+	// Convert the data to the desired format
+	formattedForecast := formattedForecast{
+		Areas: make([]formattedArea, 0),
+	}
+
+	for _, area := range data.Forecast.Areas {
+		formattedArea := formattedArea{
+			Name: area.Names,
+		}
+		for _, areaName := range area.Names {
+			if areaName.Language == "en_US" {
+				formattedArea.Name = []name{areaName}
+				break
+			}
+		}
+		formattedForecast.Areas = append(formattedForecast.Areas, formattedArea)
+	}
+
+	// Convert the formatted data to JSON
+	jsonData, err := json.MarshalIndent(formattedForecast, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("error: %s", err)
+	}
+
+	return jsonData, nil
 }
 
-func GetForecastBmkg() {
-	response, err := http.Get("https://data.bmkg.go.id/DataMKG/MEWS/DigitalForecast/DigitalForecast-KalimantanTimur.xml")
+func CreateJsonForecastBmkg(provinceCode string, endpoint string) {
+	response, err := http.Get(endpoint)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
@@ -94,7 +138,7 @@ func GetForecastBmkg() {
 	}
 
 	// Unmarshal XML data into the Data struct
-	var data Data
+	var data data
 	err = xml.Unmarshal(xmlData, &data)
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -102,55 +146,57 @@ func GetForecastBmkg() {
 	}
 
 	// Convert the data to the desired format
-	formattedForecast := FormattedForecast{
-		Areas: make([]FormattedArea, 0),
+	formattedForecast := formattedForecast{
+		Areas: make([]formattedArea, 0),
 	}
 
 	for _, area := range data.Forecast.Areas {
-		formattedArea := FormattedArea{
+		formattedArea := formattedArea{
 			Name:       area.Names,
-			Parameters: make([]FormattedParameter, 0),
+			Parameters: make([]formattedParameter, 0),
 		}
 
-		for _, param := range area.Parameters {
-			formattedParam := FormattedParameter{
-				ID:          param.ID,
-				Description: param.Description,
-				Type:        param.Type,
-				Timeranges:  make([]FormattedTimerange, 0),
-			}
-
-			for _, tr := range param.Timeranges {
-				layout := "200601021504"
-				t, err := time.Parse(layout, tr.DateTime)
-				if err != nil {
-					fmt.Println("Error:", err)
-					continue
+		if len(area.Parameters) > 0 {
+			for _, param := range area.Parameters {
+				formattedParam := formattedParameter{
+					ID:          param.ID,
+					Description: param.Description,
+					Type:        param.Type,
+					Timeranges:  make([]formattedTimerange, 0),
 				}
 
-				formattedValues := make([]FormattedValue, 0)
-				for _, value := range tr.Values {
-					formattedValue := FormattedValue{
-						Unit:  value.Unit,
-						Value: value.Value,
+				for _, tr := range param.Timeranges {
+					layout := "200601021504"
+					t, err := time.Parse(layout, tr.DateTime)
+					if err != nil {
+						fmt.Println("Error:", err)
+						continue
 					}
-					formattedValues = append(formattedValues, formattedValue)
+
+					formattedValues := make([]formattedValue, 0)
+					for _, value := range tr.Values {
+						formattedValue := formattedValue{
+							Unit:  value.Unit,
+							Value: value.Value,
+						}
+						formattedValues = append(formattedValues, formattedValue)
+					}
+
+					formattedTR := formattedTimerange{
+						Type:     tr.Type,
+						H:        tr.H,
+						DateTime: t,
+						Values:   formattedValues,
+					}
+
+					formattedParam.Timeranges = append(formattedParam.Timeranges, formattedTR)
 				}
 
-				formattedTR := FormattedTimerange{
-					Type:     tr.Type,
-					H:        tr.H,
-					DateTime: t,
-					Values:   formattedValues,
-				}
-
-				formattedParam.Timeranges = append(formattedParam.Timeranges, formattedTR)
+				formattedArea.Parameters = append(formattedArea.Parameters, formattedParam)
 			}
 
-			formattedArea.Parameters = append(formattedArea.Parameters, formattedParam)
+			formattedForecast.Areas = append(formattedForecast.Areas, formattedArea)
 		}
-
-		formattedForecast.Areas = append(formattedForecast.Areas, formattedArea)
 	}
 
 	// Convert the formatted data to JSON
@@ -161,11 +207,12 @@ func GetForecastBmkg() {
 	}
 
 	// Write the JSON data to file
-	err = ioutil.WriteFile("output.json", jsonData, 0644)
+	fileName := fmt.Sprintf("%s.json", provinceCode)
+	err = ioutil.WriteFile(fileName, jsonData, 0644)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
 
-	fmt.Println("Data JSON berhasil disimpan ke file output.json")
+	fmt.Println("fileName saved")
 }
