@@ -1,4 +1,4 @@
-package controllers
+package user
 
 import (
 	"net/http"
@@ -36,7 +36,7 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	// Assign relasi Province dan City sebelum Create
+	// Assign relation Province and City before Create
 	var province models.Province
 	if err := db.First(&province, userCreate.ProvinceID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
