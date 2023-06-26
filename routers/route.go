@@ -1,7 +1,8 @@
 package routers
 
 import (
-	"see-weather-on-your-schedule/controllers"
+	"see-weather-on-your-schedule/controllers/user"
+	"see-weather-on-your-schedule/controllers/event"
 
 	"github.com/gin-gonic/gin"
 )
@@ -9,8 +10,12 @@ import (
 func StartServer() *gin.Engine {
 	router := gin.Default()
 
-	router.POST("/user", controllers.CreateUser)
-	router.POST("/user/:id", controllers.UpdateUser)
+	// user
+	router.POST("/user", user.CreateUser)
+	router.POST("/user/:id", user.UpdateUser)
+
+	// event
+	router.POST("/event", event.CreateEvent)
 
 	return router
 }
