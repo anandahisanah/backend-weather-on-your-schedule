@@ -7,7 +7,9 @@ import (
 	"log"
 	"see-weather-on-your-schedule/database"
 	"see-weather-on-your-schedule/models"
+	_ "see-weather-on-your-schedule/routers"
 	"see-weather-on-your-schedule/service"
+	"see-weather-on-your-schedule/service/create"
 	"strings"
 )
 
@@ -28,17 +30,31 @@ func main() {
 	database.StartDB()
 	seederProvince()
 	seederCity()
+	createForecastFromJson()
 
 	// r := routers.StartServer()
 	// r.Run(":8080")
 }
 
-func seederProvince() {
-	// truncate
-	err := database.GetDB().Exec("TRUNCATE TABLE provinces CASCADE").Error
+func createForecastFromJson() {
+	db := database.GetDB()
+
+	// get province
+	provinces := []models.Province{}
+	err := db.Find(&provinces).Preload("Cities").Error
 	if err != nil {
-		log.Fatal("Error truncating table:", err)
+		log.Fatalln(err)
 	}
+
+	for _, province := range provinces {
+		// create json by province
+		service.CreateJsonForecastBmkg(province.Code, province.Endpoint)
+		create.Forecast(province.Code)
+	}
+	fmt.Println("All forecast successfully saved to Database")
+}
+
+func seederProvince() {
 	// find json file
 	filePath := "./database/data/provinces.json"
 	file, err := ioutil.ReadFile(filePath)
