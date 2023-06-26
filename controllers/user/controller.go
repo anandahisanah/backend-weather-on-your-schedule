@@ -102,7 +102,8 @@ func UpdateUser(c *gin.Context) {
 	}
 
 	// bind json
-	if err := c.ShouldBindJSON(&user); err != nil {
+	var request requestUpdate
+	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":  400,
 			"error": "Invalid request body",
@@ -112,7 +113,7 @@ func UpdateUser(c *gin.Context) {
 
 	// check if username exists
 	var existingUser models.User
-	if err := db.Where("username = ? AND id != ?", user.Username, paramID).First(&existingUser).Error; err == nil {
+	if err := db.Where("username = ? AND id != ?", request.Username, paramID).First(&existingUser).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":  400,
 			"error": "Username already exists",
@@ -139,6 +140,12 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
+	// Update user
+	user.ProvinceID = city.ProvinceID
+	user.CityID = int(city.ID)
+	user.Username = request.Username
+	user.Password = request.Password
+	user.Name = request.Name
 	user.Province = province
 	user.City = city
 
