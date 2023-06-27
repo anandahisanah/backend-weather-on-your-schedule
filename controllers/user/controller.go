@@ -49,6 +49,7 @@ type responseUpdate struct {
 func CreateUser(c *gin.Context) {
 	db := database.GetDB()
 
+	// validate request format
 	var request requestCreate
 	if err := c.BindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -147,6 +148,18 @@ func UpdateUser(c *gin.Context) {
 	// param
 	paramID := c.Param("id")
 
+	// validate request format
+	var request requestUpdate
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":             400,
+			"status":           "failed",
+			"message":          "Invalid request body",
+			"original_message": err,
+		})
+		return
+	}
+
 	// find user
 	var user models.User
 	if err := db.Preload("Province").Preload("City").First(&user, paramID).Error; err != nil {
@@ -154,18 +167,6 @@ func UpdateUser(c *gin.Context) {
 			"code":             404,
 			"status":           "failed",
 			"message":          "User not found",
-			"original_message": err,
-		})
-		return
-	}
-
-	// bind json
-	var request requestUpdate
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":             400,
-			"status":           "failed",
-			"message":          "Invalid request body",
 			"original_message": err,
 		})
 		return
