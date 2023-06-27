@@ -214,5 +214,5 @@ func CreateJsonForecastBmkg(provinceCode string, endpoint string) {
 		return
 	}
 
-	fmt.Println("fileName saved")
+	fmt.Printf("%s saved\n", fileName)
 }
