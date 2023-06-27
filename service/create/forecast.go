@@ -3,6 +3,7 @@ package create
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"see-weather-on-your-schedule/database"
@@ -46,92 +47,94 @@ type value struct {
 }
 
 func Forecast(provinceCode string) {
-    // Open JSON file
+	// Open JSON file
 	fileName := fmt.Sprintf("%s.json", provinceCode)
-    file, err := os.Open(fileName)
-    if err != nil {
-        log.Fatalln("Open JSON file:", err)
-    }
-    defer file.Close()
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalln("Open JSON file:", err)
+	}
+	defer file.Close()
 
-    // Decode JSON data
-    decoder := json.NewDecoder(file)
-    var data data
-    err = decoder.Decode(&data)
-    if err != nil {
-        log.Fatalln(err)
-    }
+	// Decode JSON data
+	decoder := json.NewDecoder(file)
+	var data data
+	err = decoder.Decode(&data)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-    // Connect to the database
-    db := database.GetDB()
+	// Connect to the database
+	db := database.GetDB()
 
-    for _, area := range data.Areas {
-        // Search city
-        for _, name := range area.Names {
-            if name.Language == "en_US" {
-                city := models.City{}
-                resultCity := db.Where("name = ?", name.Value).Preload("Province").First(&city)
-                if resultCity.Error != nil {
-                    log.Fatalln("Search city:", resultCity.Error)
-                }
+	// Disable log output
+	log.SetOutput(ioutil.Discard)
 
-                // Iterate through parameters
-                for _, parameter := range area.Parameters {
-                    if parameter.ID == "t" || parameter.ID == "ws" || parameter.ID == "hu" {
-                        // Iterate through timeranges
-                        for _, timerange := range parameter.Timeranges {
-                            datetime := timerange.Datetime
+	for _, area := range data.Areas {
+		// Search city
+		for _, name := range area.Names {
+			if name.Language == "en_US" {
+				city := models.City{}
+				resultCity := db.Where("name = ?", name.Value).Preload("Province").First(&city)
+				if resultCity.Error != nil {
+					log.Println("Search city:", resultCity.Error)
+				}
 
-                            // Search existing forecast by datetime and city
-                            existingForecast := models.Forecast{}
-                            result := db.Where("datetime = ? AND city_id = ?", datetime, city.ID).First(&existingForecast)
-                            if result.Error != nil {
-                                if result.Error != gorm.ErrRecordNotFound {
-                                    log.Fatalln("Search existing forecast:", result.Error)
-                                }
+				// Iterate through parameters
+				for _, parameter := range area.Parameters {
+					if parameter.ID == "t" || parameter.ID == "ws" || parameter.ID == "hu" {
+						// Iterate through timeranges
+						for _, timerange := range parameter.Timeranges {
+							datetime := timerange.Datetime
 
-                                // Create forecast if not found
-                                forecast := models.Forecast{
-                                    ProvinceID:  city.ProvinceID,
-                                    CityID:      int(city.ID),
-                                    Datetime:    &datetime,
-                                }
+							// Search existing forecast by datetime and city
+							existingForecast := models.Forecast{}
+							result := db.Where("datetime = ? AND city_id = ?", datetime, city.ID).First(&existingForecast)
+							if result.Error != nil {
+								if result.Error != gorm.ErrRecordNotFound {
+									log.Println("Search existing forecast:", result.Error)
+								}
 
-                                // Save forecast to the database
-                                forecastDB := db.Create(&forecast)
-                                if forecastDB.Error != nil {
-                                    log.Fatalln("Error saving forecast to database:", forecastDB.Error)
-                                }
+								// Create forecast if not found
+								forecast := models.Forecast{
+									ProvinceID: city.ProvinceID,
+									CityID:     int(city.ID),
+									Datetime:   &datetime,
+								}
 
-                                existingForecast = forecast
-                            }
+								// Save forecast to the database
+								forecastDB := db.Create(&forecast)
+								if forecastDB.Error != nil {
+									log.Println("Error saving forecast to database:", forecastDB.Error)
+								}
 
-                            // Update values based on parameter ID
-                            for _, value := range timerange.Values {
-                                switch parameter.ID {
-                                case "t":
-                                    if value.Unit == "C" {
-                                        existingForecast.Temperature = value.Value
-                                    }
-                                case "ws":
-                                    existingForecast.WindSpeed = value.Value
-                                case "hu":
-                                    existingForecast.Humidity = value.Value
-                                }
-                            }
+								existingForecast = forecast
+							}
 
-                            // Save forecast to the database
-                            forecastDB := db.Save(&existingForecast)
-                            if forecastDB.Error != nil {
-                                log.Fatalln("Error updating forecast in database:", forecastDB.Error)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+							// Update values based on parameter ID
+							for _, value := range timerange.Values {
+								switch parameter.ID {
+								case "t":
+									if value.Unit == "C" {
+										existingForecast.Temperature = value.Value
+									}
+								case "ws":
+									existingForecast.WindSpeed = value.Value
+								case "hu":
+									existingForecast.Humidity = value.Value
+								}
+							}
 
-    fmt.Printf("%s successfully imported\n", fileName)
+							// Save forecast to the database
+							forecastDB := db.Save(&existingForecast)
+							if forecastDB.Error != nil {
+								log.Println("Error updating forecast in database:", forecastDB.Error)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	fmt.Printf("%s successfully imported\n\n", fileName)
 }
-
