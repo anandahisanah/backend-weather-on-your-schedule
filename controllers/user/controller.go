@@ -16,6 +16,17 @@ type requestCreate struct {
 	Name       string `json:"name"`
 }
 
+type responseCreate struct {
+	ID           int    `json:"id"`
+	ProvinceID   int    `json:"province_id"`
+	ProvinceName string `json:"province_name"`
+	CityID       int    `json:"city_id"`
+	CityName     string `json:"city_name"`
+	Username     string `json:"username"`
+	Password     string `json:"password"`
+	Name         string `json:"name"`
+}
+
 type requestUpdate struct {
 	ProvinceID int    `json:"province_id"`
 	CityID     int    `json:"city_id"`
@@ -24,64 +35,109 @@ type requestUpdate struct {
 	Name       string `json:"name"`
 }
 
+type responseUpdate struct {
+	ID           int    `json:"id"`
+	ProvinceID   int    `json:"province_id"`
+	ProvinceName string `json:"province_name"`
+	CityID       int    `json:"city_id"`
+	CityName     string `json:"city_name"`
+	Username     string `json:"username"`
+	Password     string `json:"password"`
+	Name         string `json:"name"`
+}
+
 func CreateUser(c *gin.Context) {
 	db := database.GetDB()
 
-	var userCreate requestCreate
-	if err := c.BindJSON(&userCreate); err != nil {
+	var request requestCreate
+	if err := c.BindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":  400,
-			"error": "Invalid request payload",
+			"code":             400,
+			"status":           "failed",
+			"message":          "Invalid request body",
+			"original_message": err,
+			"data":             nil,
 		})
 		return
 	}
 
-	// Assign relation Province and City before Create
+	// check if username exists
+	var existingUser models.User
+	if err := db.Where("username = ?", request.Username).First(&existingUser).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":             400,
+			"status":           "failed",
+			"message":          "Username already exists",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
+
+	// validate province
 	var province models.Province
-	if err := db.First(&province, userCreate.ProvinceID).Error; err != nil {
+	if err := db.First(&province, request.ProvinceID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":  400,
-			"error": "Invalid province ID",
+			"code":             400,
+			"status":           "failed",
+			"message":          "Invalid Province",
+			"original_message": err,
+			"data":             nil,
 		})
 		return
 	}
 
+	// validate city
 	var city models.City
-	if err := db.First(&city, userCreate.CityID).Error; err != nil {
+	if err := db.Where("province_id = ?", province.ID).First(&city, request.CityID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":  400,
-			"error": "Invalid city ID",
+			"code":             400,
+			"status":           "failed",
+			"message":          "Invalid City",
+			"original_message": err,
+			"data":             nil,
 		})
 		return
 	}
 
+	// define model
 	user := models.User{
-		ProvinceID: userCreate.ProvinceID,
-		CityID:     userCreate.CityID,
-		Username:   userCreate.Username,
-		Password:   userCreate.Password,
-		Name:       userCreate.Name,
+		ProvinceID: request.ProvinceID,
+		CityID:     request.CityID,
+		Username:   request.Username,
+		Password:   request.Password,
+		Name:       request.Name,
 	}
 
-	// Create user
+	// create
 	if err := db.Create(&user).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":  400,
-			"error": "Failed to create user",
+			"code":             400,
+			"status":           "failed",
+			"message":          "Failed to create user",
+			"original_message": err,
+			"data":             nil,
 		})
 		return
+	}
+
+	data := responseCreate{
+		ID:           int(user.ID),
+		ProvinceID:   user.ProvinceID,
+		ProvinceName: province.Name,
+		CityID:       user.CityID,
+		CityName:     city.Name,
+		Username:     user.Username,
+		Password:     user.Password,
+		Name:         user.Name,
 	}
 
 	// response
 	c.JSON(http.StatusCreated, gin.H{
-		"id":          user.ID,
-		"province_id": user.ProvinceID,
-		"province":    province.Name,
-		"city_id":     user.CityID,
-		"city":        city.Name,
-		"username":    user.Username,
-		"password":    user.Password,
-		"name":        user.Name,
+		"code":    201,
+		"status":  "success",
+		"message": "Success",
+		"data":    data,
 	})
 }
 
@@ -95,8 +151,10 @@ func UpdateUser(c *gin.Context) {
 	var user models.User
 	if err := db.Preload("Province").Preload("City").First(&user, paramID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"code":  404,
-			"error": "User not found",
+			"code":             404,
+			"status":           "failed",
+			"message":          "User not found",
+			"original_message": err,
 		})
 		return
 	}
@@ -105,8 +163,10 @@ func UpdateUser(c *gin.Context) {
 	var request requestUpdate
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":  400,
-			"error": "Invalid request body",
+			"code":             400,
+			"status":           "failed",
+			"message":          "Invalid request body",
+			"original_message": err,
 		})
 		return
 	}
@@ -115,32 +175,39 @@ func UpdateUser(c *gin.Context) {
 	var existingUser models.User
 	if err := db.Where("username = ? AND id != ?", request.Username, paramID).First(&existingUser).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":  400,
-			"error": "Username already exists",
+			"code":             400,
+			"status":           "failed",
+			"message":          "Username already exists",
+			"original_message": err,
 		})
 		return
 	}
 
-	// Assign relasi Province dan City sebelum Update
+	// validate province
 	var province models.Province
-	if err := db.First(&province, user.ProvinceID).Error; err != nil {
+	if err := db.First(&province, request.ProvinceID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":  400,
-			"error": "Invalid province ID",
+			"code":             400,
+			"status":           "failed",
+			"message":          "Invalid Province",
+			"original_message": err,
 		})
 		return
 	}
 
+	// validate city
 	var city models.City
-	if err := db.First(&city, user.CityID).Error; err != nil {
+	if err := db.Where("province_id = ?", province.ID).First(&city, request.CityID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":  400,
-			"error": "Invalid city ID",
+			"code":             400,
+			"status":           "failed",
+			"message":          "Invalid City",
+			"original_message": err,
 		})
 		return
 	}
 
-	// Update user
+	// define model
 	user.ProvinceID = city.ProvinceID
 	user.CityID = int(city.ID)
 	user.Username = request.Username
@@ -152,21 +219,30 @@ func UpdateUser(c *gin.Context) {
 	// save
 	if err := db.Save(&user).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":  400,
-			"error": "Failed to update user",
+			"code":             400,
+			"status":           "failed",
+			"message":          "Failed to update user",
+			"original_message": err,
 		})
 		return
 	}
 
+	data := responseCreate{
+		ID:           int(user.ID),
+		ProvinceID:   user.ProvinceID,
+		ProvinceName: province.Name,
+		CityID:       user.CityID,
+		CityName:     city.Name,
+		Username:     user.Username,
+		Password:     user.Password,
+		Name:         user.Name,
+	}
+
 	// response
-	c.JSON(http.StatusOK, gin.H{
-		"id":          user.ID,
-		"province_id": user.ProvinceID,
-		"province":    user.Province.Name,
-		"city_id":     user.CityID,
-		"city":        user.City.Name,
-		"username":    user.Username,
-		"password":    user.Password,
-		"name":        user.Name,
+	c.JSON(http.StatusCreated, gin.H{
+		"code":    201,
+		"status":  "success",
+		"message": "Success",
+		"data":    data,
 	})
 }
