@@ -16,6 +16,7 @@ func StartServer() *gin.Engine {
 
 	// event
 	router.POST("/event", event.CreateEvent)
+	router.POST("/event/:id", event.UpdateEvent)
 
 	return router
 }
