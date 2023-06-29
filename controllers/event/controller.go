@@ -1,30 +1,29 @@
 package event
 
 import (
-	"log"
+	"errors"
 	"net/http"
 	"see-weather-on-your-schedule/database"
 	"see-weather-on-your-schedule/models"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type requestCreate struct {
-	UserID      int        `json:"user_id"`
-	CityID      int        `json:"city_id"`
-	Datetime    *time.Time `json:"datetime"`
-	Title       string     `json:"title"`
-	Description string     `json:"description"`
+	UserID      int    `json:"user_id"`
+	Datetime    string `json:"datetime"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
 }
 
 type requestUpdate struct {
-	ID          int        `json:"id"`
-	UserID      int        `json:"user_id"`
-	CityID      int        `json:"city_id"`
-	Datetime    *time.Time `json:"datetime"`
-	Title       string     `json:"title"`
-	Description string     `json:"description"`
+	ID          int    `json:"id"`
+	UserID      int    `json:"user_id"`
+	Datetime    string `json:"datetime"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
 }
 
 func CreateEvent(c *gin.Context) {
@@ -33,25 +32,104 @@ func CreateEvent(c *gin.Context) {
 	// validate request format
 	var request requestCreate
 	if err := c.BindJSON(&request); err != nil {
-		// TODO: standard json response is code, status, message and data
+		// TODO: standard json response is code, status, message, original_message and data
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":  400,
-			"error": "Invalid request payload",
+			"code":             400,
+			"status":           "failed",
+			"message":          "Invalid request body",
+			"original_message": err,
+			"data":             nil,
 		})
 		return
 	}
 
-	// find forecast
-	var forecast models.Forecast
-	if err := db.Where("city_id == ? AND datetime == ?", request.CityID, request.Datetime).First(&forecast).Error; err != nil {
-		log.Fatalln("Error find forecast:", err)
+	// find user
+	var user models.User
+	if err := db.First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":             404,
+			"status":           "failed",
+			"message":          "User not found",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
 	}
 
-	// define event
+	// change format datetime
+	layout := "2006-01-02 15:04:05"
+	loc, err := time.LoadLocation("Asia/Singapore") // Ganti dengan zona waktu yang sesuai
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":             500,
+			"status":           "failed",
+			"message":          "Error loading location",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
+	datetime, err := time.ParseInLocation(layout, request.Datetime, loc)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":             500,
+			"status":           "failed",
+			"message":          "Error changing datetime format",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
+
+	// find forecast and looking nearest datetime
+	var forecast models.Forecast
+	if err := db.Where("city_id = ? AND datetime = ?", user.CityID, request.Datetime).First(&forecast).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// if not found, find the last datetime
+			if err := db.Where("city_id = ? AND datetime < ?", user.CityID, request.Datetime).Order("datetime desc").First(&forecast).Error; err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code":             400,
+					"status":           "failed",
+					"message":          "Forecast not found",
+					"original_message": err,
+					"data":             nil,
+				})
+				return
+			}
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":             400,
+				"status":           "failed",
+				"message":          "Error occurred while querying forecast",
+				"original_message": err,
+				"data":             nil,
+			})
+			return
+		}
+	}
+	// if err := db.Where("city_id = ? AND datetime = ?", user.CityID, request.Datetime).First(&forecast).Error; err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{
+	// 		"code":             400,
+	// 		"status":           "failed",
+	// 		"message":          "Forecast not found",
+	// 		"original_message": err,
+	// 		"data":             nil,
+	// 	})
+	// 	return
+	// }
+
+	// define forecast id
+	var forecastID *int
+	if forecast.ID != 0 {
+		forecastIDValue := int(forecast.ID)
+		forecastID = &forecastIDValue
+	}
+
+	// define model
 	event := models.Event{
 		UserID:      request.UserID,
-		ForecastID:  int(forecast.ID),
-		Datetime:    request.Datetime,
+		ForecastID:  *forecastID,
+		Datetime:    &datetime,
 		Title:       request.Title,
 		Description: request.Description,
 	}
@@ -59,18 +137,22 @@ func CreateEvent(c *gin.Context) {
 	// create
 	if err := db.Create(&event).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"status":  "failed",
-			"message": "Failed to create event",
+			"code":             400,
+			"status":           "failed",
+			"message":          "Failed to create event",
+			"original_message": err,
+			"data":             nil,
 		})
 		return
 	}
 
 	// response
 	c.JSON(http.StatusCreated, gin.H{
-		"code":    201,
-		"status":  "success",
-		"message": "success",
+		"code":             201,
+		"status":           "success",
+		"message":          "Success",
+		"original_message": nil,
+		"data":             nil,
 	})
 }
 
@@ -84,48 +166,134 @@ func UpdateEvent(c *gin.Context) {
 	var request requestUpdate
 	if err := c.BindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":  400,
-			"error": "Invalid request payload",
+			"code":             400,
+			"status":           "failed",
+			"message":          "Invalid request body",
+			"original_message": err,
+			"data":             nil,
 		})
 		return
-	}
-
-	// find forecast
-	var forecast models.Forecast
-	if err := db.Where("city_id == ? AND datetime == ?", request.CityID, request.Datetime).First(&forecast).Error; err != nil {
-		log.Fatalln("Error find forecast:", err)
 	}
 
 	// find event
 	var event models.Event
 	if err := db.First(&event, paramID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"code":  404,
-			"error": "Event not found",
+			"code":             404,
+			"status":           "failed",
+			"message":          "Event not found",
+			"original_message": err,
+			"data":             nil,
 		})
 		return
 	}
 
+	// find user
+	var user models.User
+	if err := db.First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":             404,
+			"status":           "failed",
+			"message":          "User not found",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
+
+	// change format datetime
+	layout := "2006-01-02 15:04:05"
+	loc, err := time.LoadLocation("Asia/Singapore") // Ganti dengan zona waktu yang sesuai
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":             500,
+			"status":           "failed",
+			"message":          "Error loading location",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
+	datetime, err := time.ParseInLocation(layout, request.Datetime, loc)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":             500,
+			"status":           "failed",
+			"message":          "Error changing datetime format",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
+
+	// find forecast and looking nearest datetime
+	var forecast models.Forecast
+	if err := db.Where("city_id = ? AND datetime = ?", user.CityID, request.Datetime).First(&forecast).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// if not found, find the last datetime
+			if err := db.Where("city_id = ? AND datetime < ?", user.CityID, request.Datetime).Order("datetime desc").First(&forecast).Error; err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code":             400,
+					"status":           "failed",
+					"message":          "Forecast not found",
+					"original_message": err,
+					"data":             nil,
+				})
+				return
+			}
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":             400,
+				"status":           "failed",
+				"message":          "Error occurred while querying forecast",
+				"original_message": err,
+				"data":             nil,
+			})
+			return
+		}
+	}
+	// if err := db.Where("city_id = ? AND datetime = ?", user.CityID, request.Datetime).First(&forecast).Error; err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{
+	// 		"code":             400,
+	// 		"status":           "failed",
+	// 		"message":          "Forecast not found",
+	// 		"original_message": err,
+	// 		"data":             nil,
+	// 	})
+	// 	return
+	// }
+
+	// define forecast id
+	var forecastID *int
+	if forecast.ID != 0 {
+		forecastIDValue := int(forecast.ID)
+		forecastID = &forecastIDValue
+	}
+
 	// update event properties
 	event.UserID = request.UserID
-	event.ForecastID = int(forecast.ID)
-	event.Datetime = request.Datetime
+	event.ForecastID = *forecastID
+	event.Datetime = &datetime
 	event.Title = request.Title
 	event.Description = request.Description
 
 	// save
 	if err := db.Save(&event).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"status":  "failed",
-			"message": "Failed to update event",
+			"code":             400,
+			"status":           "failed",
+			"message":          "Failed to update event",
+			"original_message": err,
+			"data":             nil,
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code":   200,
-		"status": "success",
-		"data":   event,
+		"code":             200,
+		"status":           "success",
+		"message":          "Success",
+		"original_message": nil,
+		"data":             nil,
 	})
 }
