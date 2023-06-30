@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 	"time"
 )
@@ -27,13 +28,16 @@ type Name struct {
 	Value    string `xml:",chardata" json:"value"`
 }
 
+var envSeed = os.Getenv("SEED")
+
 func main() {
 	database.StartDB()
 
-	seederProvince()
-	seederCity()
-
-	createForecastFromJson()
+	if envSeed == "true" {
+		seederProvince()
+		seederCity()
+		createForecastFromJson()
+	}
 
 	go runForecastJob()
 
