@@ -1,6 +1,7 @@
 package routers
 
 import (
+	"backend-weather-on-your-schedule/controllers/city"
 	"backend-weather-on-your-schedule/controllers/event"
 	"backend-weather-on-your-schedule/controllers/province"
 	"backend-weather-on-your-schedule/controllers/user"
@@ -21,6 +22,9 @@ func StartServer() *gin.Engine {
 
 	// province
 	router.GET("/province", province.Find)
+
+	// city
+	router.GET("/city/:id", city.Find)
 
 	// event
 	router.GET("/event/:id", event.FindEvent)
