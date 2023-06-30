@@ -1,13 +1,13 @@
 package create
 
 import (
+	"backend-see-weather-on-your-schedule/database"
+	"backend-see-weather-on-your-schedule/models"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
-	"see-weather-on-your-schedule/database"
-	"see-weather-on-your-schedule/models"
 	"time"
 
 	"gorm.io/gorm"

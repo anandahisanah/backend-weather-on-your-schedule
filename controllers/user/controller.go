@@ -1,9 +1,9 @@
 package user
 
 import (
+	"backend-see-weather-on-your-schedule/database"
+	"backend-see-weather-on-your-schedule/models"
 	"net/http"
-	"see-weather-on-your-schedule/database"
-	"see-weather-on-your-schedule/models"
 
 	"github.com/gin-gonic/gin"
 )

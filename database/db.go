@@ -1,10 +1,10 @@
 package database
 
 import (
+	"backend-see-weather-on-your-schedule/models"
 	"fmt"
 	"log"
 	"os"
-	"see-weather-on-your-schedule/models"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
