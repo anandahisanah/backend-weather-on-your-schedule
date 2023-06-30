@@ -7,7 +7,7 @@ import (
 	"log"
 	"see-weather-on-your-schedule/database"
 	"see-weather-on-your-schedule/models"
-	_ "see-weather-on-your-schedule/routers"
+	"see-weather-on-your-schedule/routers"
 	"see-weather-on-your-schedule/service"
 	"see-weather-on-your-schedule/service/create"
 	"strings"
@@ -28,12 +28,13 @@ type Name struct {
 
 func main() {
 	database.StartDB()
+
 	seederProvince()
 	seederCity()
 	createForecastFromJson()
 
-	// r := routers.StartServer()
-	// r.Run(":8080")
+	router := routers.StartServer()
+	router.Run()
 }
 
 func createForecastFromJson() {
