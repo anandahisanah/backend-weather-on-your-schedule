@@ -17,15 +17,28 @@ func Find(c *gin.Context) {
 	db := database.GetDB()
 
 	// param
-	paramID := c.Query("id")
+	paramName := c.Query("name")
 
-	// find city
-	var cities []models.City
-	if err := db.Where("province_id = ?", paramID).Find(&cities).Error; err != nil {
+	// find province
+	var province models.Province
+	if err := db.Where("name = ?", paramName).Find(&province).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":             400,
 			"status":           "failed",
-			"message":          "Failed to get City",
+			"message":          "Failed to find Province",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
+
+	// find city
+	var cities []models.City
+	if err := db.Where("province_id = ?", province.ID).Find(&cities).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":             400,
+			"status":           "failed",
+			"message":          "Failed to find City",
 			"original_message": err,
 			"data":             nil,
 		})
