@@ -8,10 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type requestFirst struct {
-	ID int `json:"id"`
-}
-
 type responseFind struct {
 	ID     int    `json:"id"`
 	Name   string `json:"name"`
