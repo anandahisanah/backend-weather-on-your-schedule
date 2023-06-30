@@ -16,10 +16,13 @@ var (
 	err error
 )
 
+var ginMode = os.Getenv("GIN_MODE")
+
 func StartDB() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	if ginMode != "release" {
+		if err := godotenv.Load(); err != nil {
+			log.Fatalln(err.Error())
+		}
 	}
 
 	host := os.Getenv("DB_HOST")
