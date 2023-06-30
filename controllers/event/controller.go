@@ -18,12 +18,31 @@ type requestCreate struct {
 	Description string `json:"description"`
 }
 
+type responseCreate struct {
+	ID          int    `json:"id"`
+	UserID      int    `json:"user_id"`
+	Datetime    string `json:"datetime"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	CreatedAt   string `json:"created_at"`
+}
+
 type requestUpdate struct {
 	ID          int    `json:"id"`
 	UserID      int    `json:"user_id"`
 	Datetime    string `json:"datetime"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
+}
+
+type responseUpdate struct {
+	ID          int    `json:"id"`
+	UserID      int    `json:"user_id"`
+	Datetime    string `json:"datetime"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
 }
 
 func CreateEvent(c *gin.Context) {
@@ -107,16 +126,6 @@ func CreateEvent(c *gin.Context) {
 			return
 		}
 	}
-	// if err := db.Where("city_id = ? AND datetime = ?", user.CityID, request.Datetime).First(&forecast).Error; err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{
-	// 		"code":             400,
-	// 		"status":           "failed",
-	// 		"message":          "Forecast not found",
-	// 		"original_message": err,
-	// 		"data":             nil,
-	// 	})
-	// 	return
-	// }
 
 	// define forecast id
 	var forecastID *int
@@ -137,22 +146,29 @@ func CreateEvent(c *gin.Context) {
 	// create
 	if err := db.Create(&event).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"code":             400,
-			"status":           "failed",
-			"message":          "Failed to create event",
-			"original_message": err,
-			"data":             nil,
+			"code":    400,
+			"status":  "failed",
+			"message": "Failed to create event",
+			"data":    nil,
 		})
 		return
 	}
 
+	responseCreate := responseCreate{
+		ID:          int(event.ID),
+		UserID:      event.UserID,
+		Datetime:    event.Datetime.String(),
+		Title:       event.Title,
+		Description: event.Description,
+		CreatedAt:   event.CreatedAt.String(),
+	}
+
 	// response
 	c.JSON(http.StatusCreated, gin.H{
-		"code":             201,
-		"status":           "success",
-		"message":          "Success",
-		"original_message": nil,
-		"data":             nil,
+		"code":    201,
+		"status":  "success",
+		"message": "Success",
+		"data":    responseCreate,
 	})
 }
 
@@ -252,16 +268,6 @@ func UpdateEvent(c *gin.Context) {
 			return
 		}
 	}
-	// if err := db.Where("city_id = ? AND datetime = ?", user.CityID, request.Datetime).First(&forecast).Error; err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{
-	// 		"code":             400,
-	// 		"status":           "failed",
-	// 		"message":          "Forecast not found",
-	// 		"original_message": err,
-	// 		"data":             nil,
-	// 	})
-	// 	return
-	// }
 
 	// define forecast id
 	var forecastID *int
@@ -289,11 +295,21 @@ func UpdateEvent(c *gin.Context) {
 		return
 	}
 
+	// response
+	responseUpdate := responseUpdate{
+		ID:          int(event.ID),
+		UserID:      event.UserID,
+		Datetime:    event.Datetime.String(),
+		Title:       event.Title,
+		Description: event.Description,
+		CreatedAt:   event.CreatedAt.String(),
+		UpdatedAt:   event.UpdatedAt.String(),
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"code":             200,
-		"status":           "success",
-		"message":          "Success",
-		"original_message": nil,
-		"data":             nil,
+		"code":    200,
+		"status":  "success",
+		"message": "Success",
+		"data":    responseUpdate,
 	})
 }
