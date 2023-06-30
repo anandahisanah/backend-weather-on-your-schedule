@@ -33,6 +33,8 @@ func main() {
 	seederProvince()
 	seederCity()
 
+	runForecastJob()
+
 	go runForecastJob()
 
 	router := routers.StartServer()
