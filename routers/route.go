@@ -23,6 +23,7 @@ func StartServer() *gin.Engine {
 	router.GET("/province", province.Find)
 
 	// event
+	router.GET("/event/:id", event.FindEvent)
 	router.POST("/event", event.CreateEvent)
 	router.POST("/event/:id", event.UpdateEvent)
 

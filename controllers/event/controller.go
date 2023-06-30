@@ -5,11 +5,25 @@ import (
 	"backend-weather-on-your-schedule/models"
 	"errors"
 	"net/http"
+	"os/user"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+type responseFind struct {
+	ID                  int    `json:"id"`
+	UserID              int    `json:"user_id"`
+	UserUsername        string `json:"user_username"`
+	ForecastID          int    `json:"forecast_id"`
+	ForecastWeather     string `json:"forecast_weather"`
+	ForecastHumidity    string `json:"forecast_humidity"`
+	ForecastWindSpeed   string `json:"forecast_wind_speed"`
+	ForecastTemperature string `json:"forecast_temperature"`
+	CreatedAt           string `json:"created_at"`
+	UpdatedAt           string `json:"updated_at"`
+}
 
 type requestCreate struct {
 	UserID      int    `json:"user_id"`
@@ -43,6 +57,46 @@ type responseUpdate struct {
 	Description string `json:"description"`
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
+}
+
+func FindEvent(c *gin.Context) {
+	db := database.GetDB()
+
+	paramID := c.Param("id")
+
+	// find event
+	var event models.Event
+	if err := db.Preload("User").Preload("Forecast").First(&event, paramID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":             404,
+			"status":           "failed",
+			"message":          "Event not found",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
+
+	// response
+	responseFind := responseFind{
+		ID:                  int(event.ID),
+		UserID:              event.UserID,
+		UserUsername:        event.User.Username,
+		ForecastID:          event.ForecastID,
+		ForecastWeather:     event.Forecast.Weather,
+		ForecastHumidity:    event.Forecast.Humidity,
+		ForecastWindSpeed:   event.Forecast.WindSpeed,
+		ForecastTemperature: event.Forecast.Temperature,
+		CreatedAt:           event.CreatedAt.String(),
+		UpdatedAt:           event.UpdatedAt.String(),
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"status":  "success",
+		"message": "Success",
+		"data":    responseFind,
+	})
 }
 
 func CreateEvent(c *gin.Context) {
