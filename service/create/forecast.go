@@ -81,7 +81,7 @@ func Forecast(provinceCode string) {
 
 				// Iterate through parameters
 				for _, parameter := range area.Parameters {
-					if parameter.ID == "t" || parameter.ID == "ws" || parameter.ID == "hu" {
+					if parameter.ID == "t" || parameter.ID == "ws" || parameter.ID == "hu" || parameter.ID == "weather" {
 						// Iterate through timeranges
 						for _, timerange := range parameter.Timeranges {
 							datetime := timerange.Datetime
@@ -118,9 +118,32 @@ func Forecast(provinceCode string) {
 										existingForecast.Temperature = value.Value
 									}
 								case "ws":
-									existingForecast.WindSpeed = value.Value
+									if value.Unit == "MPH" {
+										existingForecast.WindSpeed = value.Value
+									}
 								case "hu":
 									existingForecast.Humidity = value.Value
+								case "weather":
+									if value.Value == "0" {
+										existingForecast.Weather = "Cerah"
+									} else if value.Value == "1" {
+										existingForecast.Weather = "Cerah Berawan"
+									} else if value.Value == "3" {
+										existingForecast.Weather = "Berawan"
+									} else if value.Value == "4" {
+										existingForecast.Weather = "Berawan Tebal"
+									} else if value.Value == "45" {
+										existingForecast.Weather = "Kabut"
+									} else if value.Value == "60" {
+										existingForecast.Weather = "Hujan Ringan"
+									} else if value.Value == "61" {
+										existingForecast.Weather = "Hujan Sedang"
+									} else if value.Value == "95" {
+										existingForecast.Weather = "Hujan Petir"
+									} else {
+										existingForecast.Weather = "Tidak diketahui"
+
+									}
 								}
 							}
 

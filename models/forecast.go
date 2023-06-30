@@ -9,6 +9,7 @@ type Forecast struct {
 	CityID      int        `gorm:"not null" json:"city_id" valid:"required~city_id is required"`
 	City        City       `gorm:"foreignKey:CityID" json:"city"`
 	Datetime    *time.Time `gorm:"not null" json:"datetime" valid:"required~datetime is required"`
+	Weather     string     `gorm:"not null" json:"weather" valid:"required~weather is required"`
 	Humidity    string     `gorm:"not null" json:"humidity" valid:"required~humidity is required"`
 	WindSpeed   string     `gorm:"not null" json:"wind_speed" valid:"required~wind_speed is required"`
 	Temperature string     `gorm:"not null" json:"temperature" valid:"required~temperature is required"`
