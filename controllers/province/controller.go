@@ -26,9 +26,9 @@ type city struct {
 func Find(c *gin.Context) {
 	db := database.GetDB()
 
-	// find with city
+	// find with cities
 	var provinces []models.Province
-	if err := db.Preload("City").Find(&provinces).Error; err != nil {
+	if err := db.Preload("Cities").Find(&provinces).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":             400,
 			"status":           "failed",
