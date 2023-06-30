@@ -11,6 +11,14 @@ import (
 	"gorm.io/gorm"
 )
 
+type responseGet struct {
+	ID          int    `json:"id"`
+	Datetime    string `json:"datetime"`
+	Weather     string `json:"weather"`
+	Temperature string `json:"temperature"`
+	Title       string `json:"title"`
+}
+
 type responseFind struct {
 	ID                  int    `json:"id"`
 	UserID              int    `json:"user_id"`
@@ -56,6 +64,45 @@ type responseUpdate struct {
 	Description string `json:"description"`
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
+}
+
+func GetEvent(c *gin.Context) {
+	db := database.GetDB()
+
+	paramUserID := c.Param("userID")
+
+	// find event
+	var events []models.Event
+	if err := db.Where("user_id = ?", paramUserID).Preload("Forecast").Find(&events).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":             404,
+			"status":           "failed",
+			"message":          "Event not found",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
+
+	// response
+	var responses []responseGet
+	for _, event := range events {
+		responseGet := responseGet{
+			ID: int(event.ID),
+			Datetime: event.Datetime.String(),
+			Weather: event.Forecast.Weather,
+			Temperature: event.Forecast.Temperature,
+			Title: event.Title,
+		}
+		responses = append(responses, responseGet)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"status":  "success",
+		"message": "Success",
+		"data":    responses,
+	})
 }
 
 func FindEvent(c *gin.Context) {
