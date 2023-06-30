@@ -22,11 +22,11 @@ type responseFind struct {
 }
 
 type requestCreate struct {
-	ProvinceID int    `json:"province_id"`
-	CityID     int    `json:"city_id"`
-	Username   string `json:"username"`
-	Password   string `json:"password"`
-	Name       string `json:"name"`
+	ProvinceName string `json:"province_name"`
+	CityName     string `json:"city_name"`
+	Username     string `json:"username"`
+	Password     string `json:"password"`
+	Name         string `json:"name"`
 }
 
 type responseCreate struct {
@@ -77,16 +77,16 @@ func FindUser(c *gin.Context) {
 	}
 
 	responseFind := responseFind{
-		ID: int(user.ID),
-		ProvinceID: user.ProvinceID,
+		ID:           int(user.ID),
+		ProvinceID:   user.ProvinceID,
 		ProvinceName: user.Province.Name,
-		CityID: user.CityID,
-		CityName: user.City.Name,
-		Username: user.Username,
-		Password: user.Password,
-		Name: user.Name,
-		CreatedAt: user.CreatedAt.String(),
-		UpdatedAt: user.UpdatedAt.String(),
+		CityID:       user.CityID,
+		CityName:     user.City.Name,
+		Username:     user.Username,
+		Password:     user.Password,
+		Name:         user.Name,
+		CreatedAt:    user.CreatedAt.String(),
+		UpdatedAt:    user.UpdatedAt.String(),
 	}
 
 	// response
@@ -130,7 +130,7 @@ func CreateUser(c *gin.Context) {
 
 	// validate province
 	var province models.Province
-	if err := db.First(&province, request.ProvinceID).Error; err != nil {
+	if err := db.Where("name = ?", request.ProvinceName).First(&province).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":             400,
 			"status":           "failed",
@@ -143,7 +143,7 @@ func CreateUser(c *gin.Context) {
 
 	// validate city
 	var city models.City
-	if err := db.Where("province_id = ?", province.ID).First(&city, request.CityID).Error; err != nil {
+	if err := db.Where("province_id = ? AND name", province.ID, request.CityName).First(&city).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":             400,
 			"status":           "failed",
@@ -156,8 +156,8 @@ func CreateUser(c *gin.Context) {
 
 	// define model
 	user := models.User{
-		ProvinceID: request.ProvinceID,
-		CityID:     request.CityID,
+		ProvinceID: int(province.ID),
+		CityID:     int(city.ID),
 		Username:   request.Username,
 		Password:   request.Password,
 		Name:       request.Name,
