@@ -26,23 +26,8 @@ type city struct {
 func Find(c *gin.Context) {
 	db := database.GetDB()
 
-	// validate request format
-	var request responseFind
-	if err := c.BindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":             400,
-			"status":           "failed",
-			"message":          "Invalid request body",
-			"original_message": err,
-			"data":             nil,
-		})
-		return
-	}
-
-	// Membuat variabel untuk menampung hasil pencarian
+	// find with city
 	var provinces []models.Province
-
-	// Melakukan pencarian menggunakan metode Find
 	if err := db.Preload("City").Find(&provinces).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":             400,
