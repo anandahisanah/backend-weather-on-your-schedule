@@ -11,6 +11,7 @@ import (
 	"see-weather-on-your-schedule/service"
 	"see-weather-on-your-schedule/service/create"
 	"strings"
+	"time"
 )
 
 type FormattedForecast struct {
@@ -31,13 +32,45 @@ func main() {
 
 	seederProvince()
 	seederCity()
-	createForecastFromJson()
+
+	go runForecastJob()
 
 	router := routers.StartServer()
 	router.Run()
 }
 
+func runForecastJob() {
+	now := time.Now()
+
+	// count the duration until 6 o'clock the next morning
+	nextMorning := time.Date(now.Year(), now.Month(), now.Day()+1, 6, 0, 0, 0, now.Location())
+	durationUntilMorning := nextMorning.Sub(now)
+
+	// count the duration until 6 pm today (evening)
+	evening := time.Date(now.Year(), now.Month(), now.Day(), 18, 0, 0, 0, now.Location())
+	durationUntilEvening := evening.Sub(now)
+
+	// wait until 6 o'clock the next morning
+	time.Sleep(durationUntilMorning)
+
+	for {
+		// run createForecastFromJson() at 6am (morning)
+		createForecastFromJson()
+
+		// wait until 6pm today (evening)
+		time.Sleep(durationUntilEvening)
+
+		// run createForecastFromJson() at 6pm (evening)
+		createForecastFromJson()
+
+		// wait until 6 o'clock the next morning
+		time.Sleep(durationUntilMorning)
+	}
+}
+
 func createForecastFromJson() {
+	fmt.Println("Executing Goroutine")
+
 	db := database.GetDB()
 
 	// get province
