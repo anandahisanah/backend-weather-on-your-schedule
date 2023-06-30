@@ -5,7 +5,6 @@ import (
 	"backend-weather-on-your-schedule/models"
 	"errors"
 	"net/http"
-	"os/user"
 	"time"
 
 	"github.com/gin-gonic/gin"
