@@ -1,9 +1,9 @@
 package routers
 
 import (
-	"backend-see-weather-on-your-schedule/controllers/event"
-	"backend-see-weather-on-your-schedule/controllers/province"
-	"backend-see-weather-on-your-schedule/controllers/user"
+	"backend-weather-on-your-schedule/controllers/event"
+	"backend-weather-on-your-schedule/controllers/province"
+	"backend-weather-on-your-schedule/controllers/user"
 	"os"
 
 	"github.com/gin-gonic/gin"

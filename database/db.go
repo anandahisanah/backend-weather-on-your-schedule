@@ -1,7 +1,7 @@
 package database
 
 import (
-	"backend-see-weather-on-your-schedule/models"
+	"backend-weather-on-your-schedule/models"
 	"fmt"
 	"log"
 	"os"

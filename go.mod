@@ -1,4 +1,4 @@
-module backend-backend-see-weather-on-your-schedule
+module backend-weather-on-your-schedule
 
 go 1.19
 

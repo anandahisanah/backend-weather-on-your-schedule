@@ -1,11 +1,11 @@
 package main
 
 import (
-	"backend-see-weather-on-your-schedule/database"
-	"backend-see-weather-on-your-schedule/models"
-	"backend-see-weather-on-your-schedule/routers"
-	"backend-see-weather-on-your-schedule/service"
-	"backend-see-weather-on-your-schedule/service/create"
+	"backend-weather-on-your-schedule/database"
+	"backend-weather-on-your-schedule/models"
+	"backend-weather-on-your-schedule/routers"
+	"backend-weather-on-your-schedule/service"
+	"backend-weather-on-your-schedule/service/create"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"

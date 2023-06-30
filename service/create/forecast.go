@@ -1,8 +1,8 @@
 package create
 
 import (
-	"backend-see-weather-on-your-schedule/database"
-	"backend-see-weather-on-your-schedule/models"
+	"backend-weather-on-your-schedule/database"
+	"backend-weather-on-your-schedule/models"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
