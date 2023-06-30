@@ -24,7 +24,7 @@ func StartServer() *gin.Engine {
 	router.GET("/province", province.Find)
 
 	// city
-	router.GET("/city/:id", city.Find)
+	router.GET("/city", city.Find)
 
 	// event
 	router.GET("/event/:id", event.FindEvent)
