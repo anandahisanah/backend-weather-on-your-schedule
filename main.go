@@ -33,7 +33,7 @@ func main() {
 	seederProvince()
 	seederCity()
 
-	runForecastJob()
+	createForecastFromJson()
 
 	go runForecastJob()
 
