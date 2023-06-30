@@ -17,7 +17,7 @@ func Find(c *gin.Context) {
 	db := database.GetDB()
 
 	// param
-	paramID := r.URL.Query().Get("id")
+	paramID := c.Query("id")
 
 	// find city
 	var cities []models.City
