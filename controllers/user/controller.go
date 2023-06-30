@@ -8,6 +8,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type responseLogin struct {
+	ID           int    `json:"id"`
+	ProvinceID   int    `json:"province_id"`
+	ProvinceName string `json:"province_name"`
+	CityID       int    `json:"city_id"`
+	CityName     string `json:"city_name"`
+	Username     string `json:"username"`
+	Name         string `json:"name"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+}
+
 type responseFind struct {
 	ID           int    `json:"id"`
 	ProvinceID   int    `json:"province_id"`
@@ -59,6 +71,48 @@ type responseUpdate struct {
 	Name         string `json:"name"`
 }
 
+func Login(c *gin.Context) {
+	db := database.GetDB()
+
+	// param
+	paramUsername := c.Query("username")
+	paramPassword := c.Query("password")
+
+	// find user
+	var user models.User
+	if err := db.Preload("Province").Preload("City").Where("username = ? AND password = ?", paramUsername, paramPassword).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":             404,
+			"status":           "failed",
+			"message":          "User not found",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
+
+	// response
+	responseLogin := responseLogin{
+		ID:           int(user.ID),
+		ProvinceID:   user.ProvinceID,
+		ProvinceName: user.Province.Name,
+		CityID:       user.CityID,
+		CityName:     user.City.Name,
+		Username:     user.Username,
+		Name:         user.Name,
+		CreatedAt:    user.CreatedAt.String(),
+		UpdatedAt:    user.UpdatedAt.String(),
+	}
+
+	// response
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"status":  "success",
+		"message": "Success",
+		"data":    responseLogin,
+	})
+}
+
 func FindUser(c *gin.Context) {
 	db := database.GetDB()
 
@@ -96,7 +150,6 @@ func FindUser(c *gin.Context) {
 		"message": "Success",
 		"data":    responseFind,
 	})
-
 }
 
 func CreateUser(c *gin.Context) {

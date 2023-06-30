@@ -16,6 +16,7 @@ func StartServer() *gin.Engine {
 	router := gin.Default()
 
 	// user
+	router.GET("/user/login", user.Login)
 	router.GET("/user/:id", user.FindUser)
 	router.POST("/user", user.CreateUser)
 	router.POST("/user/:id", user.UpdateUser)
