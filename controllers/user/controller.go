@@ -143,7 +143,7 @@ func CreateUser(c *gin.Context) {
 
 	// validate city
 	var city models.City
-	if err := db.Where("province_id = ? AND name", province.ID, request.CityName).First(&city).Error; err != nil {
+	if err := db.Where("province_id = ? AND name = ?", province.ID, request.CityName).First(&city).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":             400,
 			"status":           "failed",
