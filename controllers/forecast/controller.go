@@ -3,12 +3,10 @@ package forecast
 import (
 	"backend-weather-on-your-schedule/database"
 	"backend-weather-on-your-schedule/models"
-	"errors"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 type responseFindForecastByDatetime struct {
