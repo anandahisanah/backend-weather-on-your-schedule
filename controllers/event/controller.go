@@ -249,7 +249,7 @@ func CreateEvent(c *gin.Context) {
 
 	// define model
 	event := models.Event{
-		UserID:      request.UserID,
+		UserID:      int(user.ID),
 		ForecastID:  *forecastID,
 		Datetime:    &datetime,
 		Title:       request.Title,
