@@ -33,7 +33,7 @@ type responseFind struct {
 }
 
 type requestCreate struct {
-	UserID      int    `json:"user_id"`
+	UserUsername      int    `json:"user_username"`
 	Datetime    string `json:"datetime"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -69,11 +69,24 @@ type responseUpdate struct {
 func GetEvent(c *gin.Context) {
 	db := database.GetDB()
 
-	paramUserID := c.Param("userID")
+	paramUserUsername := c.Param("userUsername")
+
+	// find user
+	var user models.User
+	if err := db.Where("username = ?", paramUserUsername).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":             404,
+			"status":           "failed",
+			"message":          "User not found",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
 
 	// find event
 	var events []models.Event
-	if err := db.Where("user_id = ?", paramUserID).Preload("Forecast").Find(&events).Error; err != nil {
+	if err := db.Where("user_id = ?", user.ID).Preload("Forecast").Find(&events).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":             404,
 			"status":           "failed",
@@ -164,7 +177,7 @@ func CreateEvent(c *gin.Context) {
 
 	// find user
 	var user models.User
-	if err := db.First(&user).Error; err != nil {
+	if err := db.Where("username = ?", request.UserUsername).First(&user).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":             404,
 			"status":           "failed",
