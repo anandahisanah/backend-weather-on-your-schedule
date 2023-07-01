@@ -190,17 +190,7 @@ func CreateEvent(c *gin.Context) {
 
 	// change format datetime
 	layout := "2006-01-02 15:04:05"
-	loc, err := time.LoadLocation("Asia/Singapore") // Ganti dengan zona waktu yang sesuai
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":             500,
-			"status":           "failed",
-			"message":          "Error loading location",
-			"original_message": err,
-			"data":             nil,
-		})
-		return
-	}
+	loc := time.FixedZone("Asia/Singapore", 8*60*60) // Offset waktu UTC+8 (Waktu Standar Singapura)
 	datetime, err := time.ParseInLocation(layout, request.Datetime, loc)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -212,7 +202,7 @@ func CreateEvent(c *gin.Context) {
 		})
 		return
 	}
-
+	
 	// find forecast and looking nearest datetime
 	var forecast models.Forecast
 	if err := db.Where("city_id = ? AND datetime = ?", user.CityID, request.Datetime).First(&forecast).Error; err != nil {
