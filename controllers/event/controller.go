@@ -86,7 +86,7 @@ func GetEvent(c *gin.Context) {
 
 	// find event
 	var events []models.Event
-	if err := db.Where("user_id = ?", user.ID).Preload("Forecast").Find(&events).Error; err != nil {
+	if err := db.Where("user_id = ? AND datetime <= ?", user.ID, time.Now()).Preload("Forecast").Find(&events).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":             404,
 			"status":           "failed",
@@ -191,7 +191,18 @@ func CreateEvent(c *gin.Context) {
 
 	// change format datetime
 	layout := "2006-01-02 15:04:05"
-	loc := time.FixedZone("Asia/Singapore", 8*60*60) // Offset waktu UTC+8 (Waktu Standar Singapura)
+	loc, err := time.LoadLocation("Asia/Singapore")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":             500,
+			"status":           "failed",
+			"message":          "Error loading time zone",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
+
 	datetime, err := time.ParseInLocation(layout, request.Datetime, loc)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
