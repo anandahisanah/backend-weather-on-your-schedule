@@ -33,10 +33,10 @@ type responseFind struct {
 }
 
 type requestCreate struct {
-	UserUsername      int    `json:"user_username"`
-	Datetime    string `json:"datetime"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	UserUsername string    `json:"user_username"`
+	Datetime     string `json:"datetime"`
+	Title        string `json:"title"`
+	Description  string `json:"description"`
 }
 
 type responseCreate struct {
@@ -101,11 +101,11 @@ func GetEvent(c *gin.Context) {
 	var responses []responseGet
 	for _, event := range events {
 		responseGet := responseGet{
-			ID: int(event.ID),
-			Datetime: event.Datetime.String(),
-			Weather: event.Forecast.Weather,
+			ID:          int(event.ID),
+			Datetime:    event.Datetime.String(),
+			Weather:     event.Forecast.Weather,
 			Temperature: event.Forecast.Temperature,
-			Title: event.Title,
+			Title:       event.Title,
 		}
 		responses = append(responses, responseGet)
 	}
