@@ -3,6 +3,7 @@ package routers
 import (
 	"backend-weather-on-your-schedule/controllers/city"
 	"backend-weather-on-your-schedule/controllers/event"
+	"backend-weather-on-your-schedule/controllers/forecast"
 	"backend-weather-on-your-schedule/controllers/province"
 	"backend-weather-on-your-schedule/controllers/user"
 	"os"
@@ -32,6 +33,9 @@ func StartServer() *gin.Engine {
 	router.GET("/event/:id", event.FindEvent)
 	router.POST("/event", event.CreateEvent)
 	router.POST("/event/:id", event.UpdateEvent)
+	
+	// forecast
+	router.GET("/forecast/find-by-datetime", forecast.FindForecastByDatetime)
 
 	// port
 	if PORT == "" {
