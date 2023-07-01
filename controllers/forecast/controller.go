@@ -3,10 +3,12 @@ package forecast
 import (
 	"backend-weather-on-your-schedule/database"
 	"backend-weather-on-your-schedule/models"
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type responseFindForecastByDatetime struct {
@@ -86,14 +88,50 @@ func FindForecastByDatetime(c *gin.Context) {
 		return
 	}
 
+	// Check if data exists for the given date
+	var count int64
+	if err := db.Model(&models.Forecast{}).Where("city_id = ? AND DATE(datetime) = ?", user.CityID, date.Format("2006-01-02")).Count(&count).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":             400,
+			"status":           "failed",
+			"message":          "Failed to check data",
+			"original_message": err.Error(),
+			"data":             nil,
+		})
+		return
+	}
+
+	// If data not found for the given date, send response and stop further processing
+	if count == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":             400,
+			"status":           "failed",
+			"message":          "Data not found",
+			"original_message": nil,
+			"data":             nil,
+		})
+		return
+	}
+
 	// find forecast
 	var forecast models.Forecast
-	if err := db.Where("city_id = ? AND datetime >= ?", user.CityID, datetime).Order("datetime ASC").Preload("City").First(&forecast).Error; err != nil {
+	if err := db.Where("city_id = ? AND datetime = ?", user.CityID, datetime).Preload("City").First(&forecast).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":             400,
+				"status":           "failed",
+				"message":          "Forecast not found",
+				"original_message": err.Error(),
+				"data":             nil,
+			})
+			return
+		}
+
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":             400,
 			"status":           "failed",
 			"message":          "Failed to get Forecast",
-			"original_message": err,
+			"original_message": err.Error(),
 			"data":             nil,
 		})
 		return
@@ -118,6 +156,7 @@ func FindForecastByDatetime(c *gin.Context) {
 		"data":    response,
 	})
 }
+
 
 func GetForecast(c *gin.Context) {
 	db := database.GetDB()
