@@ -115,7 +115,7 @@ func FindForecastByDatetime(c *gin.Context) {
 
 	// find forecast
 	var forecast models.Forecast
-	if err := db.Where("city_id = ? AND datetime = ?", user.CityID, datetime).Preload("City").First(&forecast).Error; err != nil {
+	if err := db.Where("city_id = ? AND datetime >= ?", user.CityID, datetime).Preload("City").First(&forecast).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"code":             400,
