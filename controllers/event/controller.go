@@ -33,7 +33,7 @@ type responseFind struct {
 }
 
 type requestCreate struct {
-	UserUsername string    `json:"user_username"`
+	UserUsername string `json:"user_username"`
 	Datetime     string `json:"datetime"`
 	Title        string `json:"title"`
 	Description  string `json:"description"`
@@ -115,6 +115,7 @@ func GetEvent(c *gin.Context) {
 		"status":  "success",
 		"message": "Success",
 		"data":    responses,
+		"events":  events,
 	})
 }
 
@@ -202,7 +203,7 @@ func CreateEvent(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	// find forecast and looking nearest datetime
 	var forecast models.Forecast
 	if err := db.Where("city_id = ? AND datetime = ?", user.CityID, request.Datetime).First(&forecast).Error; err != nil {
