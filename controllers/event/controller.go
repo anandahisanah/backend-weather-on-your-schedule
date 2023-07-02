@@ -423,3 +423,38 @@ func UpdateEvent(c *gin.Context) {
 		"data":    responseUpdate,
 	})
 }
+
+func DeleteEvent(c *gin.Context) {
+	db := database.GetDB()
+
+	paramID := c.Param("id")
+
+	// find event
+	var event models.Event
+	if err := db.First(&event, paramID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":             404,
+			"status":           "failed",
+			"message":          "Data not found",
+			"original_message": err,
+		})
+		return
+	}
+
+	// delete
+	if err := db.Delete(&event).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":             500,
+			"status":           "failed",
+			"message":          "Failed to delete data",
+			"original_message": err,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"status":  "success",
+		"message": "Event successfully deleted",
+	})
+}
