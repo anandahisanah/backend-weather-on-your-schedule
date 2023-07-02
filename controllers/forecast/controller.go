@@ -9,6 +9,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type responseFindForecastNowByCity struct {
+	ID          int    `json:"id"`
+	CityName    string `json:"city_name"`
+	Datetime    string `json:"datetime"`
+	Weather     string `json:"weather"`
+	Humidity    string `json:"humidity"`
+	WindSpeed   string `json:"wind_speed"`
+	Temperature string `json:"temperature"`
+}
+
 type responseFindForecastByDatetime struct {
 	ID          int    `json:"id"`
 	CityName    string `json:"city_name"`
@@ -30,6 +40,56 @@ type responseGet struct {
 type city struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
+}
+
+func FindForecastNowByCity(c *gin.Context) {
+	db := database.GetDB()
+
+	paramUserUsername := c.Query("user_username")
+
+	// find user
+	var user models.User
+	if err := db.Where("username = ?", paramUserUsername).First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":             400,
+			"status":           "failed",
+			"message":          "Failed to find User",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
+
+	// find forecast
+	var forecast models.Forecast
+	currentDateTime := time.Now().Truncate(time.Minute)
+	if err := db.Where("city_id = ? AND datetime <= ?", user.CityID, currentDateTime).Preload("City").First(&forecast).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":             400,
+			"status":           "failed",
+			"message":          "Failed to find Forecast",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
+
+	response := responseFindForecastByDatetime{
+		ID: int(forecast.ID),
+		CityName: forecast.City.Name,
+		Datetime: forecast.Datetime.String(),
+		Weather: forecast.Weather,
+		Humidity: forecast.Humidity,
+		WindSpeed: forecast.WindSpeed,
+		Temperature: forecast.Temperature,
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"status":  "success",
+		"message": "Success",
+		"data":    response,
+	})
 }
 
 func FindForecastByDatetime(c *gin.Context) {

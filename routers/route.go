@@ -36,6 +36,7 @@ func StartServer() *gin.Engine {
 	router.DELETE("/event/:id", event.DeleteEvent)
 	
 	// forecast
+	router.GET("/forecast/now-by-city", forecast.FindForecastNowByCity)
 	router.GET("/forecast/find-by-datetime", forecast.FindForecastByDatetime)
 
 	// port
