@@ -23,6 +23,8 @@ type responseFind struct {
 	ID                  int    `json:"id"`
 	UserID              int    `json:"user_id"`
 	UserUsername        string `json:"user_username"`
+	Title               string `json:"title"`
+	Description         string `json:"description"`
 	ForecastID          int    `json:"forecast_id"`
 	ForecastWeather     string `json:"forecast_weather"`
 	ForecastHumidity    string `json:"forecast_humidity"`
@@ -142,6 +144,8 @@ func FindEvent(c *gin.Context) {
 		ID:                  int(event.ID),
 		UserID:              event.UserID,
 		UserUsername:        event.User.Username,
+		Title:               event.Title,
+		Description:         event.Description,
 		ForecastID:          event.ForecastID,
 		ForecastWeather:     event.Forecast.Weather,
 		ForecastHumidity:    event.Forecast.Humidity,
