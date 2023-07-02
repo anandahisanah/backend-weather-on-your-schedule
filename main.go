@@ -46,32 +46,14 @@ func main() {
 }
 
 func runForecastJob() {
-	now := time.Now()
+    duration := 10 * time.Minute
 
-	// count the duration until 6 o'clock the next morning
-	nextMorning := time.Date(now.Year(), now.Month(), now.Day()+1, 6, 0, 0, 0, now.Location())
-	durationUntilMorning := nextMorning.Sub(now)
+    for {
+        createForecastFromJson()
 
-	// count the duration until 6 pm today (evening)
-	evening := time.Date(now.Year(), now.Month(), now.Day(), 18, 0, 0, 0, now.Location())
-	durationUntilEvening := evening.Sub(now)
-
-	// wait until 6 o'clock the next morning
-	time.Sleep(durationUntilMorning)
-
-	for {
-		// run createForecastFromJson() at 6am (morning)
-		createForecastFromJson()
-
-		// wait until 6pm today (evening)
-		time.Sleep(durationUntilEvening)
-
-		// run createForecastFromJson() at 6pm (evening)
-		createForecastFromJson()
-
-		// wait until 6 o'clock the next morning
-		time.Sleep(durationUntilMorning)
-	}
+        // waited for 10 minutes before running again
+        time.Sleep(duration)
+    }
 }
 
 func createForecastFromJson() {
