@@ -73,6 +73,7 @@ func GetEvent(c *gin.Context) {
 	db := database.GetDB()
 
 	paramUserUsername := c.Query("userUsername")
+	paramLimit := c.Query("limit")
 
 	// find user
 	var user models.User
@@ -89,12 +90,20 @@ func GetEvent(c *gin.Context) {
 
 	// find event
 	var events []models.Event
-	if err := db.Where("user_id = ?", user.ID).Preload("Forecast").Order("datetime desc").Limit(4).Find(&events).Error; err != nil {
+	var query *gorm.DB
+
+	if paramLimit == "all" {
+		query = db.Where("user_id = ?", user.ID).Preload("Forecast").Order("datetime desc").Find(&events)
+	} else {
+		query = db.Where("user_id = ?", user.ID).Preload("Forecast").Order("datetime desc").Limit(4).Find(&events)
+	}
+
+	if query.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":             404,
 			"status":           "failed",
 			"message":          "Event not found",
-			"original_message": err,
+			"original_message": query.Error.Error(),
 			"data":             nil,
 		})
 		return
