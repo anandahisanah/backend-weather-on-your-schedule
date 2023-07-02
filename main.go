@@ -46,7 +46,7 @@ func main() {
 }
 
 func runForecastJob() {
-    duration := 10 * time.Minute
+    duration := 400 * time.Minute
 
     for {
         createForecastFromJson()
