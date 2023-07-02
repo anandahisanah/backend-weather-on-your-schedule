@@ -23,6 +23,7 @@ type responseFind struct {
 	ID                  int    `json:"id"`
 	UserID              int    `json:"user_id"`
 	UserUsername        string `json:"user_username"`
+	Datetime            string `json:"datetime"`
 	Title               string `json:"title"`
 	Description         string `json:"description"`
 	ForecastID          int    `json:"forecast_id"`
@@ -117,7 +118,6 @@ func GetEvent(c *gin.Context) {
 		"status":  "success",
 		"message": "Success",
 		"data":    responses,
-		"events":  events,
 	})
 }
 
@@ -144,6 +144,7 @@ func FindEvent(c *gin.Context) {
 		ID:                  int(event.ID),
 		UserID:              event.UserID,
 		UserUsername:        event.User.Username,
+		Datetime:            event.Datetime.String(),
 		Title:               event.Title,
 		Description:         event.Description,
 		ForecastID:          event.ForecastID,
