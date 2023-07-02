@@ -190,8 +190,8 @@ func CreateEvent(c *gin.Context) {
 	}
 
 	// change format datetime
-	layout := "2006-01-02 15:04:05-07"      // Layout dengan offset waktu
-	loc := time.FixedZone("UTC+8", 8*60*60) // Offset waktu UTC+8 (Waktu Standar Singapura)
+	layout := "2006-01-02 15:04:05"
+	loc := time.FixedZone("Asia/Singapore", 8*60*60) // Offset waktu UTC+8 (Waktu Standar Singapura)
 
 	datetime, err := time.ParseInLocation(layout, request.Datetime, loc)
 	if err != nil {
@@ -207,10 +207,10 @@ func CreateEvent(c *gin.Context) {
 
 	// find forecast and looking nearest datetime
 	var forecast models.Forecast
-	if err := db.Where("city_id = ? AND datetime = ?", user.CityID, request.Datetime).First(&forecast).Error; err != nil {
+	if err := db.Where("city_id = ? AND datetime = ?", user.CityID, datetime).First(&forecast).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// if not found, find the last datetime
-			if err := db.Where("city_id = ? AND datetime < ?", user.CityID, request.Datetime).Order("datetime desc").First(&forecast).Error; err != nil {
+			if err := db.Where("city_id = ? AND datetime < ?", user.CityID, datetime).Order("datetime desc").First(&forecast).Error; err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{
 					"code":             400,
 					"status":           "failed",
