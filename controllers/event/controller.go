@@ -86,7 +86,7 @@ func GetEvent(c *gin.Context) {
 
 	// find event
 	var events []models.Event
-	if err := db.Where("user_id = ?", user.ID).Preload("Forecast").Order("datetime desc").Limit(5).Find(&events).Error; err != nil {
+	if err := db.Where("user_id = ?", user.ID).Preload("Forecast").Order("datetime desc").Limit(4).Find(&events).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":             404,
 			"status":           "failed",
