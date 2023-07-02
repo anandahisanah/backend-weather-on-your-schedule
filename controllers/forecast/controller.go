@@ -62,8 +62,7 @@ func FindForecastNowByCity(c *gin.Context) {
 
 	// find forecast
 	var forecast models.Forecast
-	currentDateTime := time.Now().Truncate(time.Minute)
-	if err := db.Where("city_id = ? AND datetime <= ?", user.CityID, currentDateTime).Preload("City").First(&forecast).Error; err != nil {
+	if err := db.Where("city_id = ? AND datetime >= ?", user.CityID, time.Now()).Preload("City").First(&forecast).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":             400,
 			"status":           "failed",
@@ -74,7 +73,7 @@ func FindForecastNowByCity(c *gin.Context) {
 		return
 	}
 
-	response := responseFindForecastByDatetime{
+	response := responseFindForecastNowByCity{
 		ID: int(forecast.ID),
 		CityName: forecast.City.Name,
 		Datetime: forecast.Datetime.String(),
