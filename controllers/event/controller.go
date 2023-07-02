@@ -190,8 +190,8 @@ func CreateEvent(c *gin.Context) {
 	}
 
 	// change format datetime
-	layout := "2006-01-02 15:04:05"
-	loc := time.FixedZone("Asia/Singapore", 8*60*60) // Offset waktu UTC+8 (Waktu Standar Singapura)
+	layout := "2006-01-02 15:04:05-07"      // Layout dengan offset waktu
+	loc := time.FixedZone("UTC+8", 8*60*60) // Offset waktu UTC+8 (Waktu Standar Singapura)
 
 	datetime, err := time.ParseInLocation(layout, request.Datetime, loc)
 	if err != nil {
