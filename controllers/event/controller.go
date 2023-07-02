@@ -69,7 +69,7 @@ type responseUpdate struct {
 func GetEvent(c *gin.Context) {
 	db := database.GetDB()
 
-	paramUserUsername := c.Param("userUsername")
+	paramUserUsername := c.Query("userUsername")
 
 	// find user
 	var user models.User
@@ -86,7 +86,7 @@ func GetEvent(c *gin.Context) {
 
 	// find event
 	var events []models.Event
-	if err := db.Where("user_id = ? AND datetime <= ?", user.ID, time.Now()).Preload("Forecast").Find(&events).Error; err != nil {
+	if err := db.Where("user_id = ?", user.ID).Preload("Forecast").Order("datetime desc").Limit(5).Find(&events).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"code":             404,
 			"status":           "failed",
