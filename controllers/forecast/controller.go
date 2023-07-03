@@ -7,10 +7,23 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type responseFindForecastNowByCity struct {
 	ID          int    `json:"id"`
+	CityID      int    `json:"city_id"`
+	CityName    string `json:"city_name"`
+	Datetime    string `json:"datetime"`
+	Weather     string `json:"weather"`
+	Humidity    string `json:"humidity"`
+	WindSpeed   string `json:"wind_speed"`
+	Temperature string `json:"temperature"`
+}
+
+type responseGetForecast struct {
+	ID          int    `json:"id"`
+	CityID      int    `json:"city_id"`
 	CityName    string `json:"city_name"`
 	Datetime    string `json:"datetime"`
 	Weather     string `json:"weather"`
@@ -74,13 +87,63 @@ func FindForecastNowByCity(c *gin.Context) {
 	}
 
 	response := responseFindForecastNowByCity{
-		ID: int(forecast.ID),
-		CityName: forecast.City.Name,
-		Datetime: forecast.Datetime.String(),
-		Weather: forecast.Weather,
-		Humidity: forecast.Humidity,
-		WindSpeed: forecast.WindSpeed,
+		ID:          int(forecast.ID),
+		CityID:      forecast.CityID,
+		CityName:    forecast.City.Name,
+		Datetime:    forecast.Datetime.String(),
+		Weather:     forecast.Weather,
+		Humidity:    forecast.Humidity,
+		WindSpeed:   forecast.WindSpeed,
 		Temperature: forecast.Temperature,
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"status":  "success",
+		"message": "Success",
+		"data":    response,
+	})
+}
+
+func GetForecast(c *gin.Context) {
+	db := database.GetDB()
+
+	paramCityId := c.Query("city_id")
+	paramLimit := c.Query("limit")
+
+	// get forecast
+	var forecasts []models.Forecast
+	var query *gorm.DB
+
+	if paramLimit == "all" {
+		query = db.Where("city_id = ? AND datetime >= ?", paramCityId, time.Now()).Preload("City").Find(&forecasts)
+	} else {
+		query = db.Where("city_id = ? AND datetime >= ?", paramCityId, time.Now()).Preload("City").Limit(5).Find(&forecasts)
+	}
+
+	if query.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":             400,
+			"status":           "failed",
+			"message":          "Failed to get Forecast",
+			"original_message": query.Error.Error(),
+			"data":             nil,
+		})
+		return
+	}
+
+	response := make([]responseFindForecastNowByCity, len(forecasts))
+	for i, forecast := range forecasts {
+		response[i] = responseFindForecastNowByCity{
+			ID:          int(forecast.ID),
+			CityID:      forecast.CityID,
+			CityName:    forecast.City.Name,
+			Datetime:    forecast.Datetime.String(),
+			Weather:     forecast.Weather,
+			Humidity:    forecast.Humidity,
+			WindSpeed:   forecast.WindSpeed,
+			Temperature: forecast.Temperature,
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -175,46 +238,5 @@ func FindForecastByDatetime(c *gin.Context) {
 		"status":  "success",
 		"message": "Success",
 		"data":    response,
-	})
-}
-
-func GetForecast(c *gin.Context) {
-	db := database.GetDB()
-
-	paramCityName := c.Query("city_name")
-
-	// find with cities
-	var city models.City
-	if err := db.Where("name = ?", paramCityName).First(&city).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":             400,
-			"status":           "failed",
-			"message":          "Failed to find City",
-			"original_message": err,
-			"data":             nil,
-		})
-		return
-	}
-
-	// get forecast
-	var forecasts []models.Forecast
-	if err := db.Where("city_id = ? AND datetime = ", city.ID).Find(&forecasts).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":             400,
-			"status":           "failed",
-			"message":          "Failed to get Forecast",
-			"original_message": err,
-			"data":             nil,
-		})
-		return
-	}
-
-	// TODO: fix response
-	// response
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"status":  "success",
-		"message": "Success",
-		"data":    forecasts,
 	})
 }

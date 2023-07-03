@@ -37,6 +37,7 @@ func StartServer() *gin.Engine {
 	
 	// forecast
 	router.GET("/forecast/now-by-city", forecast.FindForecastNowByCity)
+	router.GET("/forecast/get", forecast.GetForecast)
 	router.GET("/forecast/find-by-datetime", forecast.FindForecastByDatetime)
 
 	// port
