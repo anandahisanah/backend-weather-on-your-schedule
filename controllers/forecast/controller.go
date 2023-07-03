@@ -108,17 +108,30 @@ func FindForecastNowByCity(c *gin.Context) {
 func GetForecast(c *gin.Context) {
 	db := database.GetDB()
 
-	paramCityId := c.Query("city_id")
+	paramUserUsername := c.Query("user_username")
 	paramLimit := c.Query("limit")
+
+	// find user
+	var user models.User
+	if err := db.Where("username = ?", paramUserUsername).First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":             400,
+			"status":           "failed",
+			"message":          "Failed to find User",
+			"original_message": err,
+			"data":             nil,
+		})
+		return
+	}
 
 	// get forecast
 	var forecasts []models.Forecast
 	var query *gorm.DB
 
 	if paramLimit == "all" {
-		query = db.Where("city_id = ? AND datetime >= ?", paramCityId, time.Now()).Preload("City").Find(&forecasts)
+		query = db.Where("city_id = ? AND datetime >= ?", user.CityID, time.Now()).Preload("City").Find(&forecasts)
 	} else {
-		query = db.Where("city_id = ? AND datetime >= ?", paramCityId, time.Now()).Preload("City").Limit(5).Find(&forecasts)
+		query = db.Where("city_id = ? AND datetime >= ?", user.CityID, time.Now()).Preload("City").Limit(5).Find(&forecasts)
 	}
 
 	if query.Error != nil {
