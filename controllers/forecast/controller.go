@@ -129,9 +129,9 @@ func GetForecast(c *gin.Context) {
 	var query *gorm.DB
 
 	if paramLimit == "all" {
-		query = db.Where("city_id = ? AND datetime >= ?", user.CityID, time.Now()).Preload("City").Find(&forecasts)
+		query = db.Where("city_id = ? AND datetime >= ?", user.CityID, time.Now()).Preload("City").Order("datetime asc").Find(&forecasts)
 	} else {
-		query = db.Where("city_id = ? AND datetime >= ?", user.CityID, time.Now()).Preload("City").Limit(5).Find(&forecasts)
+		query = db.Where("city_id = ? AND datetime >= ?", user.CityID, time.Now()).Preload("City").Order("datetime asc").Limit(5).Find(&forecasts)
 	}
 
 	if query.Error != nil {
